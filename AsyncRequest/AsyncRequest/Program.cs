@@ -18,23 +18,31 @@ namespace AsyncRequest
 
         static async Task Main()
         {
-            var posts = new List<Task<string>>();
+            var postsStrings = new List<Task<string>>();
             for (int i = startID; i <= stopID; i++)
             {
-                posts.Add(RequestResult(i));
+                postsStrings.Add(RequestPost(i));
             }
 
-            await Task.WhenAll(posts);
+            await Task.WhenAll(postsStrings);
 
-            for (int i = 0; i < posts.Count(); i++)
+            var posts = new List<SinglePost>();            
+
+            foreach (var singlePost in postsStrings)
             {
-                SinglePost singlePost = JsonConvert.DeserializeObject<SinglePost>(await posts[i]);
-                File.AppendAllLines(fileName, singlePost.ToStringList());
+                posts.Add(JsonConvert.DeserializeObject<SinglePost>(await singlePost));
+            }
+
+            posts.Sort();
+
+            foreach (var post in posts)
+            {
+                File.AppendAllLines(fileName, post.ToStringList());
                 File.AppendAllText(fileName, "\n");
             }
         }
 
-        static async Task<string> RequestResult(int id)
+        static async Task<string> RequestPost(int id)
         {
             string request = "https://jsonplaceholder.typicode.com/posts/" + id.ToString();
             try
