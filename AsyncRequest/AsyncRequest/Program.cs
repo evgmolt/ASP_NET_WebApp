@@ -16,14 +16,19 @@ namespace AsyncRequest
         static readonly string fileName = "result.txt";
         static readonly HttpClient client = new HttpClient();
 
-        static void Main()
+        static async Task Main()
         {
-            JsonSerializer serializer = new JsonSerializer();
+            var posts = new List<Task<string>>();
             for (int i = startID; i <= stopID; i++)
             {
-                var response = RequestResult(i);
-                JsonTextReader reader = new JsonTextReader(new StringReader(response.Result.ToString()));
-                SinglePost singlePost = serializer.Deserialize<SinglePost>(reader);
+                posts.Add(RequestResult(i));
+            }
+
+            await Task.WhenAll(posts);
+
+            for (int i = 0; i < posts.Count(); i++)
+            {
+                SinglePost singlePost = JsonConvert.DeserializeObject<SinglePost>(await posts[i]);
                 File.AppendAllLines(fileName, singlePost.ToStringList());
                 File.AppendAllText(fileName, "\n");
             }
