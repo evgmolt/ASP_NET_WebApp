@@ -24,22 +24,29 @@ namespace AsyncRequest
                 postsStrings.Add(RequestPost(i));
             }
 
-            await Task.WhenAll(postsStrings);
+            string[] postsStringReceived = await Task.WhenAll(postsStrings);
 
-            var posts = new List<SinglePost>();            
-
-            foreach (var singlePost in postsStrings)
+            var posts = new List<SinglePost>();
+            foreach (var singlePost in postsStringReceived)
             {
-                posts.Add(JsonConvert.DeserializeObject<SinglePost>(await singlePost));
+                try
+                {
+                    posts.Add(JsonConvert.DeserializeObject<SinglePost>(singlePost));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Json converting error :" + ex.Message);
+                    return;
+                }
             }
 
-            posts.Sort();
+            var sortedPosts = posts.OrderBy(p => p.id);
 
-            foreach (var post in posts)
+            foreach (var post in sortedPosts)
             {
                 File.AppendAllLines(fileName, post.ToStringList());
                 File.AppendAllText(fileName, "\n");
-            }
+            }        
         }
 
         static async Task<string> RequestPost(int id)
@@ -52,9 +59,9 @@ namespace AsyncRequest
                 string responseBody = await response.Content.ReadAsStringAsync();
                 return responseBody;
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException ex)
             {
-                Console.WriteLine("Exception :{0} ", e.Message);
+                Console.WriteLine("Exception :{0} ", ex.Message);
                 return null;
             }
         }
